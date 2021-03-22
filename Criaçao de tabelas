@@ -1,0 +1,85 @@
+-- SCHEMA: teste
+
+-- DROP SCHEMA teste ;
+
+CREATE SCHEMA teste
+    AUTHORIZATION postgres;
+
+COMMENT ON SCHEMA teste
+    IS 'teste';
+
+CREATE TABLE estado (
+	id SERIAL PRIMARY KEY NOT NULL,
+	nome VARCHAR(100),
+	uf VARCHAR(2)
+);
+
+CREATE TABLE cidade (
+	id SERIAL PRIMARY KEY NOT NULL,
+	id_estado INT,
+	nome VARCHAR(100),
+	
+	CONSTRAINT fk_cidade_estado FOREIGN KEY(id_estado) REFERENCES estado(id)
+);
+
+CREATE TABLE especialidade (
+	id SERIAL PRIMARY KEY NOT NULL,
+	nome VARCHAR(100)
+);
+
+CREATE TABLE medico (
+	crm SERIAL PRIMARY KEY NOT NULL,
+	id_especialidade INT,
+	id_cidade INT,
+	nome VARCHAR(100),
+	logradouro VARCHAR(200),
+	numero INT,
+	bairro VARCHAR(60),
+	cep VARCHAR(9),
+	celular VARCHAR(15),
+	fixo VARCHAR(14),
+	salario DECIMAL(10,2),
+	status smallint,
+	
+	CONSTRAINT fk_medico_especialidade FOREIGN KEY(id_especialidade) REFERENCES especialidade(id),
+	CONSTRAINT fk_medico_cidade FOREIGN KEY(id_cidade) REFERENCES cidade(id)
+);
+
+
+CREATE TABLE mae (
+	id SERIAL PRIMARY KEY NOT NULL,
+	id_cidade INT,
+	nome VARCHAR(100),
+	logradouro VARCHAR(200),
+	numero INT,
+	bairro VARCHAR(100),
+	cep VARCHAR(9),
+	fixo VARCHAR(14),
+	celular VARCHAR(15),
+	data_nascimento DATE,
+	
+	CONSTRAINT fk_mae_cidade FOREIGN KEY(id_cidade) REFERENCES cidade(id)
+);
+
+CREATE TABLE nascimento (
+	id SERIAL PRIMARY KEY NOT NULL,
+	id_mae INT,
+	crm_medico INT,
+	nome VARCHAR(100),
+	data_nascimento DATE,
+	peso DECIMAL(5,3),
+	altura smallint,
+	sexo smallint,
+	
+	CONSTRAINT fk_nascimento_medico FOREIGN KEY(crm_medico) REFERENCES medico(crm),
+	CONSTRAINT fk_nascimento_mae FOREIGN KEY(id_mae) REFERENCES mae(id)
+); 
+
+CREATE TABLE agendamento (
+	id SERIAL PRIMARY KEY NOT NULL,
+	id_nascimento INT,
+	inicio TIMESTAMP,
+	fim TIMESTAMP,
+	
+	CONSTRAINT fk_agendamento_nascimento FOREIGN KEY(id_nascimento) REFERENCES nascimento(id)
+);
