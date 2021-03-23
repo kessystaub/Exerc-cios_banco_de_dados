@@ -1,0 +1,29 @@
+-- DROP SCHEMA teste ;
+
+CREATE SCHEMA teste
+    AUTHORIZATION postgres;
+
+COMMENT ON SCHEMA teste
+    IS 'teste';
+	
+	INSERT INTO estado (nome, uf) VALUES ('Rio de Janeiro','RJ'), ('Santa Catarina', 'SC'), ('São Paulo','SP'),('Rio Grande do Sul','RS');
+	SELECT * FROM estado;
+	
+	INSERT INTO cidade (id_estado, nome) VALUES ('1','Paraty'),('2','Blumenau'),('3','Suzano'),('4','Anta Gorda');
+	SELECT * FROM cidade;
+	
+	INSERT INTO especialidade (nome) VALUES ('anestesista'),('instrumentador'),('cirurgião');
+	SELECT * FROM especialidade;
+	
+	INSERT INTO medico (id_especialidade, id_cidade, nome, logradouro, numero, bairro, cep, celular, fixo, salario, status) VALUES ('1','4','Cleitin','Rua 911','192','Arroio Zeferino','6821-243','9918-2839','3719-1287','2000','1'),('2','1','Cleitinha','Rua tiro o teio','171','Bairro bala','2823-283','9234-2387','3812-3878','1666','1'),('3','2','Cleitão','Rua 7 de setembro','313','bairro oktober','8989-384','9271-2837','3189-9828','9000','1');
+	SELECT * FROM medico;
+	
+	INSERT INTO mae (id_cidade,nome,logradouro,numero,bairro,cep,fixo,celular,data_nascimento) VALUES ('4','Fabiula','Rua nascimento','456','Bairro Gansos','2899-238','2984-8962','2394-8249','2003-01-02'),('1','Joaneva','Rua Beija-flor','8912','Bairro meia noite','21907-347','3716-4289','9923-2138','1997-03-09'),('2','Gilmara','Rua 12','2938','Bairro sol','12834-238','3712-2138','9921-2313','1980-09-08');
+	SELECT * FROM mae;
+	
+	INSERT INTO nascimento (id_mae,crm_medico,nome,data_nascimento,peso,altura,sexo) VALUES ('2','3','Robisvaudo','2021-03-22','3','1','1'),('1','3','Zeus','2021-03-22','4','2','0'),('3','3','Darciula','2021-03-22','5','0','1');
+	SELECT * FROM nascimento;
+	
+	INSERT INTO agendamento (id_nascimento,inicio,fim) VALUES ('1','2021-03-22 08:00:00-00','2021-03-22 09:00:00-00'),('2','2021-03-22 12:00:00-00','2021-03-22 13:00:00-00'),('3','2021-03-22 17:00:00-00','2021-03-22 19:00:00-00');
+	SELECT * FROM agendamento;
+	
