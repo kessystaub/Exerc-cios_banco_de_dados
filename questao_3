@@ -125,7 +125,41 @@ DROP PROCEDURE salario_mes_medico;
 SELECT salario_mes_medico(1,3,4);
 
 
+======================================================================================================
 
+CREATE OR REPLACE FUNCTION salario_mes_medico(crmm INTEGER,mes INTEGER, ano INTEGER) RETURNS INTEGER
+language plpgsql AS 
+$$
+	DECLARE
+		 salariomes INTEGER;
+		 idcidade_medico INTEGER;
+		 total_partos INTEGER;
+		 total_partoslonge INTEGER;
+	BEGIN
+		salariomes:=(SELECT medico.salario FROM medico WHERE medico.crm=crmm);
+		 
+		idcidade_medico:=(SELECT medico.id_cidade FROM medico WHERE medico.crm=crmm);
+		total_partoslonge= (SELECT COUNT (crm_medico) FROM nascimento
+				INNER JOIN mae on nascimento.id_mae=mae.id  INNER JOIN  medico on medico.crm=nascimento.crm_medico WHERE medico.id_cidade!=mae.id_cidade AND
+							nascimento.crm_medico=crmm AND EXTRACT(YEAR FROM nascimento.data_nascimento)=ano AND EXTRACT(MONTH FROM nascimento.data_nascimento)=mes);
+
+		
+		
+		total_partos= (SELECT COUNT(crm_medico) FROM nascimento WHERE nascimento.crm_medico=crmm AND EXTRACT(YEAR FROM nascimento.data_nascimento)=ano 
+					   AND EXTRACT(MONTH FROM nascimento.data_nascimento)=mes );
+		salariomes= salariomes+(4000*total_partos)+(500*total_partoslonge);
+		return salariomes;
+	
+	END;
+
+$$;
+
+DROP FUNCTION salario_mes_medico;
+SELECT  salario_mes_medico(3,3,2021);
+
+SELECT * FROM nascimento
+SELECT * FROM mae
+SELECT * FROM medico
 
 
 
