@@ -136,6 +136,14 @@ $$
 		 total_partos INTEGER;
 		 total_partoslonge INTEGER;
 	BEGIN
+		IF NOT EXISTS(SELECT medico.crm FROM medico WHERE medico.crm=crmm)THEN
+				RAISE EXCEPTION 'Medico não encontrado';
+		END IF;
+		IF EXISTS(SELECT medico.status FROM medico WHERE medico.status=0 AND medico.crm=crmm) THEN
+				RAISE EXCEPTION 'Medico indisponível';
+		END IF;
+	
+	
 		salariomes:=(SELECT medico.salario FROM medico WHERE medico.crm=crmm);
 		 
 		idcidade_medico:=(SELECT medico.id_cidade FROM medico WHERE medico.crm=crmm);
