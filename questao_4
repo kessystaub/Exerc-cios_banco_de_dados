@@ -187,6 +187,25 @@ Página 3
 c. Não é permitido que um agendamento ultrapasse o horário do expediente
 (exemplo: o agendamento que inicia às 11:50 e finaliza às 12:10 não é válido).
 
+CREATE OR REPLACE FUNCTION verifica_agendamento() RETURNS TRIGGER AS
+$$	
+	DECLARE 
+		inicio_primeiro_expediente TIME:='08:00';
+		inicio_segundo_expediente TIME:='13:30';
+		fim_primeiro_expediente TIME:='12:00';
+		fim_segundo_expediente TIME:='17:30';
+	BEGIN
+		IF EXTRACT(HOUR FROM (NEW.inicio)) > inicio_primeiro_expediente THEN
+			RAISE EXCEPTION 'Hora invalida';
+		END IF;
+	END;
+$$language plpgsql;
+		
+CREATE TRIGGER verifica_agendamento BEFORE INSERT ON agendamento FOR EACH ROW EXECUTE PROCEDURE verifica_agendamento();
+
+INSERT INTO agendamento (id_nascimento,inicio,fim) VALUES ('1','2021-03-22 08:00:00-00','2021-03-22 09:00:00-00');
+		
+
 
 
 
