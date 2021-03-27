@@ -101,32 +101,6 @@ médico informado não exista ou esteja inativo.
 
 
 
-
-
-CREATE OR REPLACE FUNCTION salario_mes_medico(crmm INTEGER,mes INTEGER, ANO INTEGER) RETURNS INTEGER
-language plpgsql AS 
-$$
-	DECLARE
-		 salariomes INTEGER;
-		 idcidade_medico INTEGER;
-	BEGIN
-		salariomes:=(SELECT medico.salario FROM medico WHERE medico.crm=crmm);
-		IF 
-		
-
-		
-		return salariomes;
-	
-	END;
-
-$$;
-
-DROP PROCEDURE salario_mes_medico;
-SELECT salario_mes_medico(1,3,4);
-
-
-======================================================================================================
-
 CREATE OR REPLACE FUNCTION salario_mes_medico(crmm INTEGER,mes INTEGER, ano INTEGER) RETURNS INTEGER
 language plpgsql AS 
 $$
