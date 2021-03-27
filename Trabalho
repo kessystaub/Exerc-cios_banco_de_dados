@@ -1,0 +1,381 @@
+-- SCHEMA: teste
+
+-- DROP SCHEMA teste ;
+
+CREATE SCHEMA teste
+    AUTHORIZATION postgres;
+
+COMMENT ON SCHEMA teste
+    IS 'teste';
+	
+	
+	
+		
+CREATE or replace function retorna_nascimento (mes INTEGER, ano INTEGER)
+RETURNS SETOF RECORD AS
+$$	
+	SELECT COUNT (crm_medico),medico.nome FROM nascimento INNER JOIN medico on nascimento.crm_medico = medico.crm WHERE EXTRACT(YEAR FROM nascimento.data_nascimento) = ano AND EXTRACT(MONTH FROM nascimento.data_nascimento) = mes GROUP BY medico.nome ORDER BY COUNT(crm_medico)DESC,medico.nome;
+$$
+LANGUAGE sql;
+
+ SELECT retorna_nascimento(03,2021);
+ 
+ SELECT * FROM nascimento;
+ 
+ DROP FUNCTION retorna_nascimento;
+ 
+ ====================================================================================
+
+Crie um procedimento armazenado, utilizando a linguagem SQL, que
+receba por parâmetro a UF, e retorne a média de idade das mães. Considerar a
+data de nascimento do bebê
+
+CREATE OR REPLACE function retorna_media_maes(uf_estado VARCHAR)
+RETURNS SETOF RECORD AS
+$$	
+		SELECT AVG(EXTRACT(YEAR FROM nascimento.data_nascimento)-EXTRACT(YEAR FROM mae.data_nascimento))FROM(((mae
+			
+			INNER JOIN cidade ON mae.id_cidade=cidade.id)
+			INNER JOIN estado ON estado.id=cidade.id_estado)
+			INNER JOIN nascimento ON mae.id = nascimento.id_mae)
+			WHERE estado.uf = uf_estado;  
+$$
+LANGUAGE sql;
+
+SELECT retorna_media_maes('SC');
+
+ DROP FUNCTION retorna_media_maes;
+ 
+ ===========================================================================================
+
+Crie um procedimento armazenado, utilizando a linguagem SQL, que
+receba por parâmetro o id do médico, e retorne a quantidade de bebês do sexo
+masculino e a quantidade de bebês do sexo feminino.
+
+
+CREATE OR REPLACE FUNCTION calcular_quantidade_bebes(crmmedico integer)
+RETURNS SETOF RECORD AS
+$$
+		SELECT COUNT (nascimento.sexo), nascimento.sexo from nascimento where nascimento.crm_medico=crmmedico AND sexo=1 GROUP BY nascimento.sexo UNION SELECT COUNT (nascimento.sexo),nascimento.sexo from nascimento where nascimento.crm_medico=crmmedico AND sexo=0 GROUP BY nascimento.sexo;
+$$
+LANGUAGE sql;
+
+SELECT calcular_quantidade_bebes(3);
+
+==================================================================================================
+
+Crie um procedimento armazenado, utilizando a linguagem PL/pgSQL,
+que receba por parâmetro os dados do bebê, e insira um registro na tabela
+“nascimento”. Faça uma validação, antes de inserir, para lançar uma exceção
+caso o id da mãe não exista; e caso o id do médico informado não exista ou esteja
+inativo.
+
+
+CREATE OR REPLACE PROCEDURE insere_registro(idmae INTEGER, crmmedico INTEGER, nome_bebe VARCHAR, datanascimento DATE, peso_bebe DECIMAL, altura_bebe INTEGER, sexo_bebe INTEGER)
+LANGUAGE plpgsql AS 
+$$
+	BEGIN
+		IF NOT EXISTS(SELECT mae.id from mae WHERE mae.id=idmae) THEN
+				RAISE EXCEPTION 'Mãe não encontrada';
+		END IF;
+		IF NOT EXISTS(SELECT medico.crm FROM medico WHERE medico.crm=crmmedico)THEN
+				RAISE EXCEPTION 'Medico não encontrado';
+		END IF;
+		IF EXISTS(SELECT medico.status FROM medico WHERE medico.status=0 AND medico.crm=crmmedico) THEN
+				RAISE EXCEPTION 'Medico indisponível';
+		END IF;
+		INSERT INTO nascimento(id_mae,crm_medico,nome,data_nascimento,peso,altura,sexo) VALUES (idmae,crmmedico,nome_bebe,datanascimento,peso_bebe,altura_bebe,sexo_bebe);
+	END;
+$$;
+
+DROP PROCEDURE insere_registro;
+
+CALL insere_registro(2,3,'jujuzinha',DATE('2021-03-22'),3,1,1);
+SELECT * FROM nascimento;
+
+==============================================================================================================
+(2 pontos) Crie um procedimento armazenado, utilizando a linguagem PL/pgSQL,
+que receba por parâmetro o código do médico, o mês (inteiro) e o ano (inteiro), e
+retorne o valor do salário líquido. O salário do médico é composto pelo salário fixo
+do médico mais R$ 4.000,00 por nascimento realizado no período. Caso o
+nascimento tenha sido em uma cidade (considerar a cidade da mãe) diferente da
+cidade que o médico mora, há um custo de R$ 500,00 de descolamento por
+nascimento. Faça uma validação para lançar uma exceção caso o código do
+médico informado não exista ou esteja inativo.
+
+CREATE OR REPLACE FUNCTION salario_mes_medico(crmm INTEGER,mes INTEGER, ano INTEGER) RETURNS INTEGER
+language plpgsql AS 
+$$
+	DECLARE
+		 salariomes INTEGER;
+		 idcidade_medico INTEGER;
+		 total_partos INTEGER;
+		 total_partoslonge INTEGER;
+	BEGIN
+		IF NOT EXISTS(SELECT medico.crm FROM medico WHERE medico.crm=crmm)THEN
+				RAISE EXCEPTION 'Medico não encontrado';
+		END IF;
+		IF EXISTS(SELECT medico.status FROM medico WHERE medico.status=0 AND medico.crm=crmm) THEN
+				RAISE EXCEPTION 'Medico indisponível';
+		END IF;
+	
+	
+		salariomes:=(SELECT medico.salario FROM medico WHERE medico.crm=crmm);
+		 
+		idcidade_medico:=(SELECT medico.id_cidade FROM medico WHERE medico.crm=crmm);
+		total_partoslonge= (SELECT COUNT (crm_medico) FROM nascimento
+				INNER JOIN mae on nascimento.id_mae=mae.id  INNER JOIN  medico on medico.crm=nascimento.crm_medico WHERE medico.id_cidade!=mae.id_cidade AND
+							nascimento.crm_medico=crmm AND EXTRACT(YEAR FROM nascimento.data_nascimento)=ano AND EXTRACT(MONTH FROM nascimento.data_nascimento)=mes);
+
+		
+		
+		total_partos= (SELECT COUNT(crm_medico) FROM nascimento WHERE nascimento.crm_medico=crmm AND EXTRACT(YEAR FROM nascimento.data_nascimento)=ano 
+					   AND EXTRACT(MONTH FROM nascimento.data_nascimento)=mes );
+		salariomes= salariomes+(4000*total_partos)+(500*total_partoslonge);
+		return salariomes;
+	
+	END;
+
+$$;
+
+DROP FUNCTION salario_mes_medico;
+SELECT  salario_mes_medico(3,3,2021);
+
+SELECT * FROM nascimento
+SELECT * FROM mae
+SELECT * FROM medico
+
+==================================================
+
+Crie uma função de gatilho que, ao inserir um registro na tabela
+“nascimento”, valide se o médico está ativo. Caso estiver inativo lançar uma
+mensagem de exceção: “médico inativo”.
+
+CREATE OR REPLACE FUNCTION inserir_registro_nascimento() RETURNS TRIGGER AS 
+$$
+	DECLARE 
+		med INT;
+	BEGIN
+		SELECT COUNT(*) INTO med FROM medico WHERE crm = NEW.crm_medico AND status = 1;
+		IF med = 0 THEN
+			RAISE EXCEPTION 'Médico indisponivel';
+		END IF;
+		RETURN NEW;
+	END;
+$$language plpgsql;
+
+DROP FUNCTION inserir_registro_nascimento;
+
+CREATE TRIGGER  inserir_registro_nascimento BEFORE INSERT ON nascimento FOR EACH ROW EXECUTE PROCEDURE inserir_registro_nascimento();
+
+DROP TRIGGER inserir_registro_nascimento();
+
+INSERT INTO nascimento(id_mae,crm_medico,nome,data_nascimento,peso,altura,sexo) VALUES (1,4,'lola','2021-03-22',1,1,1);
+INSERT INTO nascimento(id_mae,crm_medico,nome,data_nascimento,peso,altura,sexo) VALUES (1,3,'loladois','2021-03-22',1,1,1);
+
+==========================================================================================================================
+
+Crie uma função de gatilho que, ao desativar um médico, lance uma
+exceção caso ele tenha realizado algum nascimento no mês: “médico possui
+nascimentos recentes”.
+
+CREATE OR REPLACE FUNCTION trigger_desativar_medico() RETURNS TRIGGER AS 
+$$
+	DECLARE 
+		nasc INT;
+	BEGIN
+		SELECT COUNT(*) INTO nasc FROM nascimento WHERE nascimento.crm_medico= NEW.crm and EXTRACT(MONTH FROM nascimento.data_nascimento)=EXTRACT(MONTH FROM (SELECT current_date));
+		IF nasc > 0 THEN
+			RAISE EXCEPTION 'Médico possui nascimentos recentes';
+		END IF;
+		RETURN NEW;
+	END;
+$$language plpgsql;
+
+CREATE TRIGGER trigger_desativar_medico BEFORE UPDATE ON medico FOR EACH ROW EXECUTE PROCEDURE trigger_desativar_medico();
+
+UPDATE medico SET status = 0 WHERE crm = 2;
+UPDATE medico SET status = 0 WHERE crm = 3;
+
+==========================================================================================================================
+
+ Crie uma função de gatilho para não permitir a diminuição ou o
+aumento superior a 50% dos salários dos médicos. Lance uma mensagem de
+exceção para cada verificação.
+
+CREATE OR REPLACE FUNCTION ver_salario() RETURNS TRIGGER AS
+$$
+	DECLARE
+		salario_trigger INT;
+		metade_salario_trigger INT;
+		salario_maior_trigger INT;
+		salario_menor_trigger INT;
+	BEGIN
+		SELECT medico.salario INTO salario_trigger FROM medico WHERE medico.crm= NEW.crm;
+		metade_salario_trigger:=(salario_trigger/2);
+		salario_maior_trigger= (salario_trigger+metade_salario_trigger);
+		salario_menor_trigger= (salario_trigger-metade_salario_trigger);
+		
+		IF salario_maior_trigger < NEW.salario THEN
+			RAISE EXCEPTION 'Aumento maior que 50';
+		END IF;
+		IF salario_menor_trigger > NEW.salario THEN
+			RAISE EXCEPTION 'Aumento menor que 50';
+		END IF;
+		RETURN NEW;
+	END;
+
+$$language plpgsql;
+
+CREATE TRIGGER ver_salario BEFORE UPDATE ON medico FOR EACH ROW EXECUTE PROCEDURE ver_salario();
+
+UPDATE medico SET salario = 1667 WHERE crm = 2;
+UPDATE medico SET salario = 10000 WHERE crm = 2;
+UPDATE medico SET salario = 1 WHERE crm = 2;
+
+SELECT * FROM medico;
+
+===============================================================================
+
+ Crie uma função de gatilho para não permitir valor zerado ou nulo nas
+colunas nome, data_nascimento, peso, altura e sexo da tabela “nascimento”, ao
+atualizar um registro. Deve-se lançar uma exceção customizada para cada coluna.
+
+CREATE OR REPLACE FUNCTION verifica_valor() RETURNS TRIGGER AS
+$$
+	BEGIN
+		IF NEW.nome = '' THEN
+			RAISE EXCEPTION 'Nome invalido';
+		END IF;
+		IF NEW.data_nascimento = NULL THEN
+			RAISE EXCEPTION 'Data invalida';
+		END IF;
+		IF NEW.peso = 0 THEN
+			RAISE EXCEPTION 'peso invalido';
+		END IF;
+		IF NEW.altura = 0 THEN
+			RAISE EXCEPTION 'Altura invalida';
+		END IF;
+		IF NEW.sexo = 0 THEN
+			RAISE EXCEPTION 'Sexo invalido';
+		END IF;
+		RETURN NEW;
+	END;
+$$language plpgsql;
+
+CREATE TRIGGER verifica_valor AFTER UPDATE OF nome,data_nascimento,peso,altura,sexo ON nascimento FOR EACH ROW EXECUTE PROCEDURE verifica_valor();
+
+UPDATE nascimento SET peso=0 WHERE id=1;
+
+SELECT * FROM nascimento;
+
+===============================================================================
+
+Crie uma função de gatilho para não permitir agendamentos fora do
+expediente do hospital. Lance uma mensagem de exceção. Leve em
+consideração as seguintes regras de negócio:
+a. Expediente: 08:00 até 12:00; 13:30 até 17:30;
+b. Não há expediente no sábado e no domingo;
+Página 3
+c. Não é permitido que um agendamento ultrapasse o horário do expediente
+(exemplo: o agendamento que inicia às 11:50 e finaliza às 12:10 não é válido).
+
+CREATE OR REPLACE FUNCTION verifica_expediente() RETURNS TRIGGER AS
+$$
+	DECLARE
+		 novo_inicio_hora INTEGER;
+		 novo_inicio_minuto INTEGER;
+		 novo_fim_hora INTEGER;
+		 novo_fim_minuto INTEGER;
+		 expediente_inicio_hora INTEGER;
+		 expediente_inicio_minuto INTEGER;
+		 expediente_fim_hora INTEGER;
+		 expediente_fim_minuto INTEGER;
+	BEGIN
+		expediente_inicio_hora=8;
+		expediente_inicio_minuto=0;
+		expediente_fim_hora=12;
+		expediente_fim_minuto=0;
+		
+		IF EXTRACT(DOW FROM new.inicio)=6 OR EXTRACT(DOW FROM new.inicio)=0 THEN
+			RAISE EXCEPTION 'DATA INVALIDA';
+			END IF;
+	
+		IF EXTRACT(HOUR FROM new.inicio)>EXTRACT(HOUR FROM new.fim) THEN
+			RAISE EXCEPTION 'HORA INVALIDA';
+			END IF;
+		
+		IF EXTRACT(HOUR FROM new.fim)<expediente_fim_hora THEN
+		
+			IF EXTRACT(HOUR FROM new.fim)<expediente_fim_hora THEN
+				IF EXTRACT(HOUR FROM new.inicio)<expediente_inicio_hora THEN
+					RAISE EXCEPTION 'HORA INVALIDA';
+				
+				ELSIF EXTRACT(HOUR FROM new.inicio)=expediente_inicio_hora AND EXTRACT(MINUTE FROM new.inicio)<expediente_inicio_minuto  THEN
+					RAISE EXCEPTION 'MINUTO INVALIDO';
+				END IF;				
+		
+			ELSIF EXTRACT (HOUR FROM new.fim)=expediente_fim_hora AND EXTRACT(MINUTE FROM new.fim)<=expediente_fim_minuto THEN
+				IF EXTRACT(HOUR FROM new.inicio)<expediente_inicio_hora THEN
+					RAISE EXCEPTION 'HORA INVALIDA';
+				
+				ELSIF EXTRACT(HOUR FROM new.inicio)=expediente_inicio_hora AND EXTRACT(MINUTE FROM new.inicio)<expediente_inicio_minuto  THEN
+					RAISE EXCEPTION 'MINUTO INVALIDO';
+				END IF;	
+			ELSIF EXTRACT (HOUR FROM new.fim)>=expediente_fim_hora AND EXTRACT(MINUTE FROM new.fim)>expediente_fim_minuto THEN
+					RAISE EXCEPTION 'FORA DE EXPEDIENTE';
+			
+			END IF;
+	
+		ELSE
+		
+		expediente_inicio_hora=13;
+		expediente_inicio_minuto=30;
+		expediente_fim_hora=17;
+		expediente_fim_minuto=30;
+				
+			IF EXTRACT(HOUR FROM new.fim)<expediente_fim_hora THEN
+				IF EXTRACT(HOUR FROM new.inicio)<expediente_inicio_hora THEN
+					RAISE EXCEPTION 'HORA INVALIDA';
+				
+				ELSIF EXTRACT(HOUR FROM new.inicio)=expediente_inicio_hora AND EXTRACT(MINUTE FROM new.inicio)<expediente_inicio_minuto  THEN
+					RAISE EXCEPTION 'MINUTO INVALIDOO';
+				END IF;				
+		
+			ELSIF EXTRACT (HOUR FROM new.fim)=expediente_fim_hora AND EXTRACT(MINUTE FROM new.fim)<=expediente_fim_minuto THEN
+				IF EXTRACT(HOUR FROM new.inicio)<expediente_inicio_hora THEN
+					RAISE EXCEPTION 'HORA INVALIDA';
+				
+				ELSIF EXTRACT(HOUR FROM new.inicio)=expediente_inicio_hora AND EXTRACT(MINUTE FROM new.inicio)<expediente_inicio_minuto  THEN
+					RAISE EXCEPTION 'MINUTO INVALIDO';
+				END IF;	
+				
+				
+			ELSIF EXTRACT (HOUR FROM new.fim)=expediente_fim_hora  THEN
+				IF EXTRACT (HOUR FROM new.fim)>=expediente_fim_hora AND EXTRACT(MINUTE FROM new.fim)>expediente_fim_minuto THEN
+					RAISE EXCEPTION 'FORA DE EXPEDIENTE';
+				END IF;
+			ELSIF EXTRACT (HOUR FROM new.fim)>expediente_fim_hora  THEN
+
+				RAISE EXCEPTION 'FORA DE EXPEDIENTE';
+			END IF;
+				
+		END IF;
+		
+		RETURN NEW;	
+	END;
+
+$$
+language plpgsql;
+
+CREATE TRIGGER  verifica_expediente BEFORE INSERT ON agendamento FOR EACH ROW EXECUTE PROCEDURE verifica_expediente();
+
+INSERT INTO agendamento (id_nascimento,inicio,fim) VALUES ('1','2021-03-26 08:00:00-00','2021-03-26 11:59:00-00');
+INSERT INTO agendamento (id_nascimento,inicio,fim) VALUES ('1','2021-03-26 07:50:00-00','2021-03-26 11:59:00-00');
+INSERT INTO agendamento (id_nascimento,inicio,fim) VALUES ('1','2021-03-26 14:30:00-00','2021-03-26 11:59:00-00');
+
+
+DROP FUNCTION verifica_expediente;
+SELECT  verifica_expediente();
+
+ 
