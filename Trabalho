@@ -7,13 +7,7 @@ CREATE SCHEMA trabalho
 
 COMMENT ON SCHEMA trabalho
     IS 'trabalho';
-	
-	
-CREATE SCHEMA teste
-    AUTHORIZATION postgres;
 
-COMMENT ON SCHEMA teste
-    IS 'teste';
 
 CREATE TABLE estado (
 	id SERIAL PRIMARY KEY NOT NULL,
