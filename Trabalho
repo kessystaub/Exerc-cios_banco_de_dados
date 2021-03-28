@@ -1,12 +1,12 @@
--- SCHEMA: teste
+-- SCHEMA: trabalho
 
--- DROP SCHEMA teste ;
+-- DROP SCHEMA trabalho ;
 
-CREATE SCHEMA teste
+CREATE SCHEMA trabalho
     AUTHORIZATION postgres;
 
-COMMENT ON SCHEMA teste
-    IS 'teste';
+COMMENT ON SCHEMA trabalho
+    IS 'trabalho';
 	
 	
 CREATE SCHEMA teste
