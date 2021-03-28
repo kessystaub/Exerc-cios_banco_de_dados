@@ -8,6 +8,9 @@ CREATE SCHEMA trabalho
 COMMENT ON SCHEMA trabalho
     IS 'trabalho';
 
+Questão 1 (0,5 ponto) – Desenvolva o código SQL da criação do banco de dados de
+acordo com a estrutura abaixo (todas as chaves primárias são do tipo SERIAL):
+
 
 CREATE TABLE estado (
 	id SERIAL PRIMARY KEY NOT NULL,
@@ -87,6 +90,8 @@ CREATE TABLE agendamento (
 
 ==================================================================================================================================================
 
+Questão 2 (0,5 ponto) – Simule a inserção de, no mínimo, 3 registros em cada tabela do
+banco de dados criado na Questão 1.
 	
 	INSERT INTO estado (nome, uf) VALUES ('Rio de Janeiro','RJ'), ('Santa Catarina', 'SC'), ('São Paulo','SP'),('Rio Grande do Sul','RS');
 	SELECT * FROM estado;
@@ -111,7 +116,12 @@ CREATE TABLE agendamento (
 	
 	
 ======================================================================================================================================================
-		
+
+Questão 3.1 (0,5 ponto) Crie um procedimento armazenado, utilizando a linguagem SQL, que
+receba por parâmetro o mês (inteiro) e o ano (inteiro), e retorne a quantidade de
+nascimentos no período por médico, e o nome do médico. Ordenar por quantidade
+(decrescente) e por nome (alfabética).
+
 CREATE or replace function retorna_nascimento (mes INTEGER, ano INTEGER)
 RETURNS SETOF RECORD AS
 $$	
@@ -127,7 +137,7 @@ LANGUAGE sql;
  
  ====================================================================================
 
-Crie um procedimento armazenado, utilizando a linguagem SQL, que
+Questão 3.2 Crie um procedimento armazenado, utilizando a linguagem SQL, que
 receba por parâmetro a UF, e retorne a média de idade das mães. Considerar a
 data de nascimento do bebê
 
@@ -149,7 +159,7 @@ SELECT retorna_media_maes('SC');
  
  ===========================================================================================
 
-Crie um procedimento armazenado, utilizando a linguagem SQL, que
+Questão 3.3  Crie um procedimento armazenado, utilizando a linguagem SQL, que
 receba por parâmetro o id do médico, e retorne a quantidade de bebês do sexo
 masculino e a quantidade de bebês do sexo feminino.
 
@@ -165,7 +175,7 @@ SELECT calcular_quantidade_bebes(3);
 
 ==================================================================================================
 
-Crie um procedimento armazenado, utilizando a linguagem PL/pgSQL,
+Questão 3.4 Crie um procedimento armazenado, utilizando a linguagem PL/pgSQL,
 que receba por parâmetro os dados do bebê, e insira um registro na tabela
 “nascimento”. Faça uma validação, antes de inserir, para lançar uma exceção
 caso o id da mãe não exista; e caso o id do médico informado não exista ou esteja
@@ -195,7 +205,7 @@ CALL insere_registro(2,3,'jujuzinha',DATE('2021-03-22'),3,1,1);
 SELECT * FROM nascimento;
 
 ==============================================================================================================
-(2 pontos) Crie um procedimento armazenado, utilizando a linguagem PL/pgSQL,
+Questão 3.5 (2 pontos) Crie um procedimento armazenado, utilizando a linguagem PL/pgSQL,
 que receba por parâmetro o código do médico, o mês (inteiro) e o ano (inteiro), e
 retorne o valor do salário líquido. O salário do médico é composto pelo salário fixo
 do médico mais R$ 4.000,00 por nascimento realizado no período. Caso o
@@ -248,7 +258,7 @@ SELECT * FROM medico
 
 ==================================================
 
-Crie uma função de gatilho que, ao inserir um registro na tabela
+Questão 4.1 Crie uma função de gatilho que, ao inserir um registro na tabela
 “nascimento”, valide se o médico está ativo. Caso estiver inativo lançar uma
 mensagem de exceção: “médico inativo”.
 
@@ -276,7 +286,7 @@ INSERT INTO nascimento(id_mae,crm_medico,nome,data_nascimento,peso,altura,sexo) 
 
 ==========================================================================================================================
 
-Crie uma função de gatilho que, ao desativar um médico, lance uma
+Questão 4.2 Crie uma função de gatilho que, ao desativar um médico, lance uma
 exceção caso ele tenha realizado algum nascimento no mês: “médico possui
 nascimentos recentes”.
 
@@ -300,7 +310,7 @@ UPDATE medico SET status = 0 WHERE crm = 3;
 
 ==========================================================================================================================
 
- Crie uma função de gatilho para não permitir a diminuição ou o
+Questão 4.3 Crie uma função de gatilho para não permitir a diminuição ou o
 aumento superior a 50% dos salários dos médicos. Lance uma mensagem de
 exceção para cada verificação.
 
@@ -338,7 +348,7 @@ SELECT * FROM medico;
 
 ===============================================================================
 
- Crie uma função de gatilho para não permitir valor zerado ou nulo nas
+Questão 4.4 Crie uma função de gatilho para não permitir valor zerado ou nulo nas
 colunas nome, data_nascimento, peso, altura e sexo da tabela “nascimento”, ao
 atualizar um registro. Deve-se lançar uma exceção customizada para cada coluna.
 
@@ -372,7 +382,7 @@ SELECT * FROM nascimento;
 
 ===============================================================================
 
-Crie uma função de gatilho para não permitir agendamentos fora do
+Questão 4.5 Crie uma função de gatilho para não permitir agendamentos fora do
 expediente do hospital. Lance uma mensagem de exceção. Leve em
 consideração as seguintes regras de negócio:
 a. Expediente: 08:00 até 12:00; 13:30 até 17:30;
